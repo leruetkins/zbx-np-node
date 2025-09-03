@@ -287,9 +287,19 @@
                                     <div v-if="messages.length === 0" class="text-gray-500 dark:text-gray-400">
                                         No messages yet...
                                     </div>
-                                    <div v-for="(message, index) in messages" :key="index" class="mb-1 text-gray-800 dark:text-gray-200 break-words" style="line-height: 1.4;">
-                                        {{ message }}
-                                    </div>
+                                    <template v-for="(message, index) in messages" :key="index">
+                                        <!-- Check if message is a timestamp -->
+                                        <div v-if="isTimestampMessage(message)" class="mt-3 first:mt-0">
+                                            <span class="inline-flex items-center px-1.5 py-0.5 text-xs font-mono text-gray-600 bg-gray-100 dark:bg-gray-600 dark:text-gray-200 rounded text-nowrap">
+                                                <span class="mr-2">#{{ getRequestNumber(index) }}</span>
+                                                <span>{{ formatTimestamp(message) }}</span>
+                                            </span>
+                                        </div>
+                                        <!-- Regular message without number -->
+                                        <div v-else class="mb-1 text-gray-800 dark:text-gray-200 break-words" style="line-height: 1.4;">
+                                            {{ message }}
+                                        </div>
+                                    </template>
                                 </div>
                             </div>
                         </div>
@@ -1042,6 +1052,29 @@
                     } else {
                         document.documentElement.classList.remove('dark');
                     }
+                },
+
+                isTimestampMessage(message) {
+                    // Check if message matches the timestamp pattern [HH:MM:SS DD-MM-YYYY]
+                    const timestampRegex = /^\[\d{2}:\d{2}:\d{2} \d{2}-\d{2}-\d{4}\]$/;
+                    return timestampRegex.test(message);
+                },
+
+                formatTimestamp(message) {
+                    // Extract and format the timestamp
+                    // Remove the brackets and return just the timestamp
+                    return message.slice(1, -1);
+                },
+
+                getRequestNumber(timestampIndex) {
+                    // Count the number of timestamp messages up to and including this one
+                    let requestCount = 0;
+                    for (let i = 0; i <= timestampIndex; i++) {
+                        if (this.isTimestampMessage(this.messages[i])) {
+                            requestCount++;
+                        }
+                    }
+                    return requestCount;
                 },
 
                 scrollToBottom() {
