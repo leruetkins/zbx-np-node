@@ -1,0 +1,32 @@
+{
+  "name": "zbx-np-node",
+  "version": "1.0.0",
+  "description": "Node.js rewrite of the zbx-np Rust project - A lightweight Zabbix data relay service",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "zabbix",
+    "mqtt",
+    "monitoring",
+    "iot",
+    "data-relay"
+  ],
+  "author": "zbx-np Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "mqtt": "^5.5.0",
+    "ws": "^8.17.0",
+    "express-basic-auth": "^1.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
