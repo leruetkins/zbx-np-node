@@ -17,8 +17,8 @@ function startWebSocketServer(httpServer) {
     wss.on('connection', (ws, req) => {
         console.log('WebSocket client connected from', req.socket.remoteAddress);
 
-        // Send recent messages to the new client (last 50 with newest first)
-        const recentMessages = MESSAGES.slice(0, 50);
+        // Send recent messages to the new client in chronological order (oldest first in the slice)
+        const recentMessages = MESSAGES.slice(0, 50).reverse();
         recentMessages.forEach(msg => {
             if (ws.readyState === WebSocket.OPEN) {
                 ws.send(msg);
@@ -30,8 +30,9 @@ function startWebSocketServer(httpServer) {
             try {
                 const msgStr = message.toString();
                 if (msgStr === 'last') {
-                    // Send all recent messages again
-                    MESSAGES.forEach(msg => {
+                    // Send all recent messages again in chronological order (oldest first in the slice)
+                    const recentMessages = MESSAGES.slice(0, 50).reverse();
+                    recentMessages.forEach(msg => {
                         if (ws.readyState === WebSocket.OPEN) {
                             ws.send(msg);
                         }

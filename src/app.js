@@ -83,10 +83,18 @@ async function sendToZabbix(responseData) {
         zabbixSender.addItem(itemName, itemValue);
     }
 
-    const showResult = await zabbixSender.send();
-    console.log(`Result = ${showResult}`);
-    addMessage(`Zabbix Result: ${showResult}`);
-    return showResult;
+    try {
+        const showResult = await zabbixSender.send();
+        console.log(`Result = ${showResult}`);
+        addMessage(`Zabbix Result: ${showResult}`);
+        return showResult;
+    } catch (err) {
+        // Add the error message to the log here to ensure correct order
+        const errorMessage = `Error processing Zabbix request: ${err.message}`;
+        console.error(errorMessage);
+        addMessage(errorMessage);
+        throw err; // Re-throw the error for the calling function to handle
+    }
 }
 
 // HTTP GET endpoint for Zabbix data
@@ -135,9 +143,7 @@ app.get('/zabbix', authMiddleware, async (req, res) => {
         res.json(responseData);
     } catch (err) {
         stats.failed_requests++;
-        const errorMessage = `Error processing Zabbix GET request: ${err.message}`;
-        console.error(errorMessage);
-        addMessage(errorMessage);
+        // Note: We're not adding this to messages here anymore as it's already logged in the ZabbixSender
         res.status(500).json({
             error: "Failed to send data to Zabbix server",
             details: err.message,
@@ -191,9 +197,7 @@ app.post('/zabbix', authMiddleware, async (req, res) => {
         res.json(responseData);
     } catch (err) {
         stats.failed_requests++;
-        const errorMessage = `Error processing Zabbix POST request: ${err.message}`;
-        console.error(errorMessage);
-        addMessage(errorMessage);
+        // Note: We're not adding this to messages here anymore as it's already logged in the ZabbixSender
         res.status(500).json({
             error: "Failed to send data to Zabbix server",
             details: err.message,

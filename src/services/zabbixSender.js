@@ -63,7 +63,8 @@ class ZabbixSender {
             
             // Validate server address
             if (!this.zabbixServerAddr.address || !this.zabbixServerAddr.port) {
-                return reject(new Error('Invalid Zabbix server address or port'));
+                const errorMsg = 'Invalid Zabbix server address or port';
+                return reject(new Error(errorMsg));
             }
             
             const client = new net.Socket();
@@ -71,7 +72,8 @@ class ZabbixSender {
 
             const timeout = setTimeout(() => {
                 client.destroy();
-                reject(new Error('Zabbix connection timed out'));
+                const errorMsg = 'Zabbix connection timed out';
+                reject(new Error(errorMsg));
             }, ZABBIX_TIMEOUT);
 
             client.connect(this.zabbixServerAddr.port, this.zabbixServerAddr.address, () => {
@@ -93,7 +95,6 @@ class ZabbixSender {
             client.on('error', (err) => {
                 clearTimeout(timeout);
                 console.error(`Zabbix send error: ${err.message}`);
-                addMessage(`Zabbix Error: ${err.message}`); // Log to global message system
                 reject(err);
             });
 
