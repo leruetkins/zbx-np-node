@@ -40,6 +40,7 @@
       "**/*"
     ],
     "win": {
+      "icon": "icon.png",
       "target": [
         {
           "target": "portable",
@@ -48,6 +49,10 @@
           ]
         }
       ]
+    },
+    "nsis": {
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico"
     }
   }
 }

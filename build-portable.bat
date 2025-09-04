@@ -4,12 +4,6 @@ echo ==============================================
 echo Building zbx-np-node portable (Windows)
 echo ==============================================
 
-echo Installing npm dependencies...
-npm install
-if %ERRORLEVEL% neq 0 (
-  echo npm install failed with exit code %ERRORLEVEL%.
-  exit /b %ERRORLEVEL%
-)
 
 echo Running build (portable)...
 npm run dist
