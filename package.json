@@ -2,10 +2,12 @@
   "name": "zbx-np-node",
   "version": "1.0.0",
   "description": "Node.js rewrite of the zbx-np Rust project - A lightweight Zabbix data relay service",
-  "main": "src/app.js",
+  "main": "electron-main.js",
   "scripts": {
-    "start": "node src/app.js",
+    "start": "electron .",
     "dev": "nodemon src/app.js",
+    "dist": "electron-builder --win portable",
+    "dist:zip": "electron-builder --win zip",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -19,14 +21,33 @@
   "license": "MIT",
   "dependencies": {
     "express": "^4.19.2",
+    "express-basic-auth": "^1.2.1",
     "mqtt": "^5.5.0",
-    "ws": "^8.17.0",
-    "express-basic-auth": "^1.2.1"
+    "ws": "^8.17.0"
   },
   "devDependencies": {
+    "electron": "^25.3.0",
+    "electron-builder": "^24.13.3",
     "nodemon": "^3.1.0"
   },
   "engines": {
     "node": ">=14.0.0"
+  },
+  "build": {
+    "appId": "com.zbxnp.node",
+    "productName": "zbx-np-node",
+    "files": [
+      "**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
   }
 }

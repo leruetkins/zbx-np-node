@@ -303,8 +303,15 @@ async function startServer() {
     }
     
     console.log("zbx-np-node server started successfully");
+    return port;
 }
 
-startServer();
+// Only start server automatically if this file is executed directly (node src/app.js)
+if (require.main === module) {
+    startServer().catch(err => {
+        console.error('Failed to start server:', err);
+        process.exit(1);
+    });
+}
 
-module.exports = { stats };
+module.exports = { stats, startServer };
