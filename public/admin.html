@@ -729,7 +729,7 @@
                     loginError: '',
 
                     // UI state
-                    currentView: 'dashboard',
+                    currentView: localStorage.getItem('zbx_current_view') || 'dashboard',
                     darkMode: localStorage.getItem('darkMode') === 'true',
                     sidebarOpen: false, // Mobile sidebar state
 
@@ -745,7 +745,7 @@
                     wsConnected: false,
                     messages: [],
                     manualJsonInput: '',
-                    activeManualInputTab: 'json', // 'json' or 'form'
+                    activeManualInputTab: localStorage.getItem('zbx_active_manual_input_tab') || 'json', // 'json' or 'form'
                     manualFormInput: {
                         zabbix_server_ip: '',
                         zabbix_server_port: 10051,
@@ -794,7 +794,7 @@
                     isSaving: false,
                     isAddingUser: false,
                     isGeneratingToken: false,
-                    activeTab: 'users',
+                    activeTab: localStorage.getItem('zbx_active_tab') || 'users',
 
                     // Modal state
                     modal: {
@@ -823,6 +823,18 @@
 
             beforeUnmount() {
                 document.removeEventListener('click', this.handleClickOutside);
+            },
+
+            watch: {
+                currentView(newValue) {
+                    localStorage.setItem('zbx_current_view', newValue);
+                },
+                activeManualInputTab(newValue) {
+                    localStorage.setItem('zbx_active_manual_input_tab', newValue);
+                },
+                activeTab(newValue) {
+                    localStorage.setItem('zbx_active_tab', newValue);
+                }
             },
 
             methods: {
