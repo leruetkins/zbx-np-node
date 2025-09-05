@@ -198,7 +198,7 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6 mb-6">
                                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 lg:p-6">
                                     <div class="flex items-center">
-                                        <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900">
+                                        <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
                                             <i class="fas fa-server text-blue-600 dark:text-blue-400"></i>
                                         </div>
                                         <div class="ml-4">
@@ -210,7 +210,7 @@
 
                                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 lg:p-6">
                                     <div class="flex items-center">
-                                        <div class="p-3 rounded-full bg-green-100 dark:bg-green-900">
+                                        <div class="p-3 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
                                             <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
                                         </div>
                                         <div class="ml-4">
@@ -222,7 +222,7 @@
 
                                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 lg:p-6">
                                     <div class="flex items-center">
-                                        <div class="p-3 rounded-full bg-red-100 dark:bg-red-900">
+                                        <div class="p-3 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
                                             <i class="fas fa-times-circle text-red-600 dark:text-red-400"></i>
                                         </div>
                                         <div class="ml-4">
@@ -234,18 +234,18 @@
 
                                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 lg:p-6">
                                     <div class="flex items-center">
-                                        <div class="p-3 rounded-full" :class="{
-                                            'bg-green-100 dark:bg-green-900': mqttStatus.status === 'running',
-                                            'bg-yellow-100 dark:bg-yellow-900': mqttStatus.status === 'starting' || mqttStatus.status === 'connecting' || mqttStatus.status === 'reconnecting',
-                                            'bg-gray-100 dark:bg-gray-900': mqttStatus.status === 'disabled' || mqttStatus.status === 'stopped',
-                                            'bg-red-100 dark:bg-red-900': mqttStatus.status === 'unknown' || mqttStatus.status === 'error' || mqttStatus.status === 'disconnected'
-                                        }">
+                                        <div class="p-3 rounded-full flex items-center justify-center" :class="{
+                'bg-green-100 dark:bg-green-900': mqttStatus.status === 'running',
+                'bg-yellow-100 dark:bg-yellow-900': mqttStatus.status === 'starting' || mqttStatus.status === 'connecting' || mqttStatus.status === 'reconnecting',
+                'bg-gray-100 dark:bg-gray-900': mqttStatus.status === 'disabled' || mqttStatus.status === 'stopped',
+                'bg-red-100 dark:bg-red-900': mqttStatus.status === 'unknown' || mqttStatus.status === 'error' || mqttStatus.status === 'disconnected'
+            }">
                                             <i class="fas fa-wifi" :class="{
-                                                'text-green-600 dark:text-green-400': mqttStatus.status === 'running',
-                                                'text-yellow-600 dark:text-yellow-400': mqttStatus.status === 'starting' || mqttStatus.status === 'connecting' || mqttStatus.status === 'reconnecting',
-                                                'text-gray-600 dark:text-gray-400': mqttStatus.status === 'disabled' || mqttStatus.status === 'stopped',
-                                                'text-red-600 dark:text-red-400': mqttStatus.status === 'unknown' || mqttStatus.status === 'error' || mqttStatus.status === 'disconnected'
-                                            }"></i>
+                    'text-green-600 dark:text-green-400': mqttStatus.status === 'running',
+                    'text-yellow-600 dark:text-yellow-400': mqttStatus.status === 'starting' || mqttStatus.status === 'connecting' || mqttStatus.status === 'reconnecting',
+                    'text-gray-600 dark:text-gray-400': mqttStatus.status === 'disabled' || mqttStatus.status === 'stopped',
+                    'text-red-600 dark:text-red-400': mqttStatus.status === 'unknown' || mqttStatus.status === 'error' || mqttStatus.status === 'disconnected'
+                }"></i>
                                         </div>
                                         <div class="ml-4 min-w-0 flex-1">
                                             <div class="flex items-center justify-between">
@@ -255,11 +255,11 @@
                                                 </div>
                                             </div>
                                             <p class="text-sm lg:text-lg font-semibold truncate" :class="{
-                                                'text-green-600 dark:text-green-400': mqttStatus.status === 'running',
-                                                'text-yellow-600 dark:text-yellow-400': mqttStatus.status === 'starting' || mqttStatus.status === 'connecting' || mqttStatus.status === 'reconnecting',
-                                                'text-gray-600 dark:text-gray-400': mqttStatus.status === 'disabled' || mqttStatus.status === 'stopped',
-                                                'text-red-600 dark:text-red-400': mqttStatus.status === 'unknown' || mqttStatus.status === 'error'
-                                            }">
+                    'text-green-600 dark:text-green-400': mqttStatus.status === 'running',
+                    'text-yellow-600 dark:text-yellow-400': mqttStatus.status === 'starting' || mqttStatus.status === 'connecting' || mqttStatus.status === 'reconnecting',
+                    'text-gray-600 dark:text-gray-400': mqttStatus.status === 'disabled' || mqttStatus.status === 'stopped',
+                    'text-red-600 dark:text-red-400': mqttStatus.status === 'unknown' || mqttStatus.status === 'error'
+                }">
                                                 {{
                                                 mqttStatus.enabled ?
                                                 (mqttStatus.status === 'running' ? 'Running' :
@@ -277,7 +277,7 @@
 
                                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 lg:p-6">
                                     <div class="flex items-center">
-                                        <div class="p-3 rounded-full bg-purple-100 dark:bg-purple-900">
+                                        <div class="p-3 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
                                             <i class="fas fa-paper-plane text-purple-600 dark:text-purple-400"></i>
                                         </div>
                                         <div class="ml-4">
@@ -287,6 +287,7 @@
                                     </div>
                                 </div>
                             </div>
+
                         </div>
 
                         <!-- Manual Input Section -->
@@ -319,6 +320,13 @@
 
                                 <!-- JSON Input Tab Content -->
                                 <div v-show="activeManualInputTab === 'json'">
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2 flex items-center">
+                                        Example: <code class="px-1 py-0.5 rounded text-xs mr-2"
+                                            ref="jsonExampleCode">{"zabbix_server_ip":"192.168.0.163","zabbix_server_port":10051,"item_host_name":"test","item":[{"key":"voltage","value":4434}]}</code>
+                                        <button @click="copyJsonExample" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </p>
                                     <div class="flex flex-col sm:flex-row gap-3">
                                         <input v-model="manualJsonInput" type="text" placeholder="Enter JSON string manually..."
                                             class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
@@ -353,7 +361,7 @@
                                         <h4 class="text-md font-medium text-gray-900 dark:text-white">Items</h4>
                                         <button @click="addManualFormItem" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center space-x-1 text-sm">
                                             <svg class="w-4 h-4 text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-7 7V5"/>
+                                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-7 7V5" />
                                             </svg>
                                             <span>Add Item</span>
                                         </button>
@@ -380,7 +388,8 @@
                         <div class="flex-1 flex flex-col mx-4 lg:mx-6 bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mb-4">
                             <div class="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                                 <h3 class="text-lg font-medium text-gray-900 dark:text-white">Real-time Activity</h3>
-                                <button @click="clearMessagesLocalAndServer" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md text-sm">
+                                <button @click="clearMessagesLocalAndServer"
+                                    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md text-sm">
                                     Clear All
                                 </button>
                             </div>
@@ -398,7 +407,7 @@
                                             </span>
                                         </div>
                                         <div v-else :class="getMessageClasses(message.type)" class="mb-1 break-words p-1 rounded" style="line-height: 1.4;">
-                                           {{ message.content }}
+                                            {{ message.content }}
                                         </div>
                                     </template>
                                 </div>
@@ -1334,6 +1343,15 @@
                         if (this.$refs.consoleContainer) {
                             this.$refs.consoleContainer.scrollTop = this.$refs.consoleContainer.scrollHeight;
                         }
+                    });
+                },
+
+                copyJsonExample() {
+                    const jsonExample = this.$refs.jsonExampleCode.textContent;
+                    navigator.clipboard.writeText(jsonExample).then(() => {
+                        this.showNotification('Success', 'JSON example copied to clipboard!', 'success');
+                    }).catch(() => {
+                        this.showNotification('Error', 'Failed to copy JSON example. Please copy manually.', 'error');
                     });
                 },
 
