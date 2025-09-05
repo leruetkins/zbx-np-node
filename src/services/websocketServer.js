@@ -156,5 +156,6 @@ module.exports = {
     addMessage,
     getMessages,
     broadcastMessage,
-    sendWebsocketMessage
+    sendWebsocketMessage,
+    clearAllMessages: () => { MESSAGES.length = 0; } // New function to clear messages
 };

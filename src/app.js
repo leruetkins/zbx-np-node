@@ -2,7 +2,7 @@ const express = require('express');
 const config = require('./config');
 const path = require('path');
 const { ZabbixSender, decodeUnicodeEscapeSequences } = require('./services/zabbixSender');
-const { startWebSocketServer, addMessage, getMessages, sendWebsocketMessage } = require('./services/websocketServer');
+const { startWebSocketServer, addMessage, getMessages, sendWebsocketMessage, clearAllMessages } = require('./services/websocketServer');
 const { mqttConnect, mqttDisconnect, getMqttStatus, broadcastMqttStatus, sendCurrentMqttStatusToClient } = require('./services/mqttClient');
 const basicAuth = require('express-basic-auth');
 
@@ -331,6 +331,11 @@ app.post('/api/zabbix/manual', async (req, res) => {
 // Management endpoints
 app.post('/api/restart', restartService);
 app.get('/api/logs', getLogs);
+
+app.post('/api/logs/clear', (req, res) => {
+    clearAllMessages();
+    res.json({ success: true, message: "Logs cleared" });
+});
 
 // Restart MQTT service function
 async function restartMqttService(enabled) {
