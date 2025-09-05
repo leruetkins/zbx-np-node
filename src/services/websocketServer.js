@@ -67,31 +67,34 @@ function startWebSocketServer(httpServer) {
 }
 
 // Function to add a message to the global store and broadcast
-function addMessage(message) {
-    // Clean message for WebSocket safety - allow UTF-8 text including Russian/Cyrillic
-    // but filter out problematic control characters that could break WebSocket connections
-    const cleanMessage = typeof message === 'string' ? 
-        message
-            .split('')
-            .filter((char, index) => {
-                // Allow printable characters, whitespace, and most Unicode characters
-                // but exclude control characters (except newlines, tabs, carriage returns)
-                const code = char.charCodeAt(0);
-                return code >= 32 || code === 10 || code === 13 || code === 9 || (code >= 128 && code <= 55295) || (code >= 57344 && code <= 65535);
-            })
-            .join('')
-            .substring(0, 2000) : // Increase limit to 2000 characters
-        JSON.stringify(message, null, 2); // Pretty print JSON with indentation
-    
-    if (cleanMessage.trim().length === 0) {
+function addMessage(message, type = 'info') { // Default type to 'info'
+    const messageObject = {
+        type: type,
+        content: typeof message === 'string' ? message : JSON.stringify(message, null, 2),
+        timestamp: new Date().toISOString()
+    };
+
+    // Clean message content for WebSocket safety
+    messageObject.content = messageObject.content
+        .split('')
+        .filter((char, index) => {
+            const code = char.charCodeAt(0);
+            return code >= 32 || code === 10 || code === 13 || code === 9 || (code >= 128 && code <= 55295) || (code >= 57344 && code <= 65535);
+        })
+        .join('')
+        .substring(0, 2000);
+
+    if (messageObject.content.trim().length === 0) {
         return; // Don't send empty messages
     }
+
+    const messageStr = JSON.stringify(messageObject);
     
-    MESSAGES.unshift(cleanMessage);
+    MESSAGES.unshift(messageStr);
     if (MESSAGES.length > MAX_MESSAGES) {
         MESSAGES.pop();
     }
-    broadcastMessage(cleanMessage);
+    broadcastMessage(messageStr);
 }
 
 // Function to get recent messages

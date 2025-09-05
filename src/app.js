@@ -33,6 +33,10 @@ let stats = {
     uptime: "0s",
 };
 
+function broadcastStats() {
+    sendWebsocketMessage('stats', stats);
+}
+
 // Basic Auth Middleware
 const authMiddleware = basicAuth({
     authorizer: (username, password, callback) => {
@@ -63,12 +67,8 @@ function printTimeDate() {
 }
 
 // Utility function to send data to Zabbix
-async function sendToZabbix(responseData) {
-    const zabbixServer = responseData.zabbix_server;
-    const [address, port] = zabbixServer.split(':');
-    const zabbixServerAddr = { address, port: parseInt(port, 10) };
-    const zabbixItemHostName = responseData.item_host_name;
-    const items = responseData.item;
+async function sendToZabbix(zabbixServerIp, zabbixServerPort, zabbixItemHostName, items) {
+    const zabbixServerAddr = { address: zabbixServerIp, port: parseInt(zabbixServerPort, 10) };
 
     const zabbixSender = new ZabbixSender(zabbixServerAddr, zabbixItemHostName);
     for (const item of items) {
@@ -85,14 +85,15 @@ async function sendToZabbix(responseData) {
 
     try {
         const showResult = await zabbixSender.send();
+        stats.zabbix_sends++; // Increment zabbix_sends on successful send
+        broadcastStats(); // Broadcast updated stats
         console.log(`Result = ${showResult}`);
-        addMessage(`Zabbix Result: ${showResult}`);
         return showResult;
     } catch (err) {
         // Add the error message to the log here to ensure correct order
         const errorMessage = `Error processing Zabbix request: ${err.message}`;
         console.error(errorMessage);
-        addMessage(errorMessage);
+        addMessage(errorMessage, 'error');
         throw err; // Re-throw the error for the calling function to handle
     }
 }
@@ -101,30 +102,42 @@ async function sendToZabbix(responseData) {
 app.get('/zabbix', authMiddleware, async (req, res) => {
     stats.total_requests++;
     
+    broadcastStats(); // Initial broadcast when total_requests changes
     const message = printTimeDate();
     console.log(`\n${message}`);
-    addMessage(message);
+    addMessage(message, 'timestamp');
 
     const remoteAddr = req.ip;
     if (remoteAddr) {
         console.log(`Received data from HTTP via GET: ${remoteAddr}`);
-        addMessage(`Received data from HTTP via GET: ${remoteAddr}`);
+        addMessage(`Received data from HTTP GET request from: ${remoteAddr}`, 'http-get');
     } else {
         console.log("Unable to retrieve the remote IP address");
     }
 
     try {
-        const data = JSON.parse(req.query.data);
+        const { server_ip, server_port, item_host_name, ...otherParams } = req.query;
+
+        const items = [];
+        for (const key in otherParams) {
+            const parsedValue = parseFloat(otherParams[key]);
+            if (!isNaN(parsedValue)) {
+                items.push({ key: key, value: parsedValue });
+            } else {
+                console.warn(`Skipping non-numeric query parameter: ${key}=${otherParams[key]}`);
+                addMessage(`Skipping non-numeric query parameter: ${key}=${otherParams[key]}`);
+            }
+        }
 
         const responseJson = {
-            zabbix_server: data.zabbix_server,
-            item_host_name: data.item_host_name,
-            item: data.item,
+            zabbix_server: `${server_ip}:${server_port}`,
+            item_host_name: item_host_name,
+            item: items,
         };
         console.log(JSON.stringify(responseJson));
-        addMessage(JSON.stringify(responseJson));
+        addMessage(JSON.stringify(responseJson), 'zabbix-request-payload');
 
-        const showResult = await sendToZabbix(responseJson);
+        const showResult = await sendToZabbix(server_ip, server_port, item_host_name, items);
         const decodedShowResult = decodeUnicodeEscapeSequences(showResult);
 
         const responseData = {
@@ -140,9 +153,11 @@ app.get('/zabbix', authMiddleware, async (req, res) => {
         }
 
         stats.successful_requests++;
+        broadcastStats(); // Broadcast after successful request
         res.json(responseData);
     } catch (err) {
         stats.failed_requests++;
+        broadcastStats(); // Broadcast after failed request
         // Note: We're not adding this to messages here anymore as it's already logged in the ZabbixSender
         res.status(500).json({
             error: "Failed to send data to Zabbix server",
@@ -154,15 +169,15 @@ app.get('/zabbix', authMiddleware, async (req, res) => {
 // HTTP POST endpoint for Zabbix data
 app.post('/zabbix', authMiddleware, async (req, res) => {
     stats.total_requests++;
-    
+    broadcastStats(); // Initial broadcast when total_requests changes
     const message = printTimeDate();
     console.log(`\n${message}`);
-    addMessage(message);
+    addMessage(message, 'timestamp');
 
     const remoteAddr = req.ip;
     if (remoteAddr) {
         console.log(`Received data from HTTP via POST: ${remoteAddr}`);
-        addMessage(`Received data from HTTP via POST: ${remoteAddr}`);
+        addMessage(`Received data from HTTP POST request from: ${remoteAddr}`, 'http-post');
     } else {
         console.log("Unable to retrieve the remote IP address");
     }
@@ -171,14 +186,15 @@ app.post('/zabbix', authMiddleware, async (req, res) => {
         const data = req.body;
 
         const responseJson = {
-            zabbix_server: data.zabbix_server,
+            zabbix_server_ip: data.zabbix_server_ip,
+            zabbix_server_port: data.zabbix_server_port,
             item_host_name: data.item_host_name,
             item: data.item,
         };
         console.log(JSON.stringify(responseJson));
-        addMessage(JSON.stringify(responseJson));
+        addMessage(JSON.stringify(responseJson), 'zabbix-request-payload');
 
-        const showResult = await sendToZabbix(responseJson);
+        const showResult = await sendToZabbix(responseJson.zabbix_server_ip, responseJson.zabbix_server_port, responseJson.item_host_name, responseJson.item);
         const decodedShowResult = decodeUnicodeEscapeSequences(showResult);
 
         const responseData = {
@@ -194,9 +210,11 @@ app.post('/zabbix', authMiddleware, async (req, res) => {
         }
 
         stats.successful_requests++;
+        broadcastStats(); // Broadcast after successful request
         res.json(responseData);
     } catch (err) {
         stats.failed_requests++;
+        broadcastStats(); // Broadcast after failed request
         // Note: We're not adding this to messages here anymore as it's already logged in the ZabbixSender
         res.status(500).json({
             error: "Failed to send data to Zabbix server",
@@ -252,6 +270,57 @@ app.get('/api/tokens', getTokens);
 app.post('/api/tokens', createToken);
 app.delete('/api/tokens/:id', deleteToken);
 
+// Manual JSON input endpoint (uses session auth like other API endpoints)
+app.post('/api/zabbix/manual', async (req, res) => {
+    stats.total_requests++;
+    broadcastStats(); // Initial broadcast when total_requests changes
+    const message = printTimeDate();
+    console.log(`\n${message}`);
+    addMessage(message, 'timestamp');
+
+    console.log(`Manual JSON Input from Admin Panel`);
+    addMessage(`Manual JSON Input from Admin Panel`, 'manual-input-source');
+
+    try {
+        const data = req.body;
+
+        const responseJson = {
+            zabbix_server_ip: data.zabbix_server_ip,
+            zabbix_server_port: data.zabbix_server_port,
+            item_host_name: data.item_host_name,
+            item: data.item,
+        };
+        console.log(JSON.stringify(responseJson));
+        addMessage(JSON.stringify(responseJson), 'zabbix-request-payload');
+
+        const showResult = await sendToZabbix(responseJson.zabbix_server_ip, responseJson.zabbix_server_port, responseJson.item_host_name, responseJson.item);
+        const decodedShowResult = decodeUnicodeEscapeSequences(showResult);
+
+        const responseData = {
+            data: responseJson,
+            result: decodedShowResult
+        };
+
+        // Convert the "result" field to a JSON value if it's a string that looks like JSON
+        try {
+            responseData.result = JSON.parse(responseData.result);
+        } catch (e) {
+            // If it's not JSON, keep it as a string
+        }
+
+        stats.successful_requests++;
+        broadcastStats(); // Broadcast after successful request
+        res.json(responseData);
+    } catch (err) {
+        stats.failed_requests++;
+        broadcastStats(); // Broadcast after failed request
+        res.status(500).json({
+            error: "Failed to send data to Zabbix server",
+            details: err.message,
+        });
+    }
+});
+
 // Management endpoints
 app.post('/api/restart', restartService);
 app.get('/api/logs', getLogs);
@@ -271,9 +340,9 @@ async function restartMqttService(enabled) {
     if (enabled) {
         broadcastMqttStatus(true, "starting", mqttUrl, mqttTopic);
         mqttConnect();
-        addMessage("MQTT: Service restarted");
+        addMessage("MQTT: Service restarted", 'mqtt-status');
     } else {
-        addMessage("MQTT: Service disabled");
+        addMessage("MQTT: Service disabled", 'mqtt-status');
     }
 }
 
@@ -284,7 +353,28 @@ async function startServer() {
 
     const server = app.listen(port, () => {
         console.log(`zbx-np-node server running on http://localhost:${port}`);
+        // Initial broadcast of stats when server starts
+        broadcastStats();
     });
+
+    // Update uptime every second and broadcast stats
+    let startTime = process.hrtime();
+    setInterval(() => {
+        const elapsed = process.hrtime(startTime);
+        const seconds = Math.floor(elapsed[0] + elapsed[1] / 1e9);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const remainingSeconds = seconds % 60;
+        const remainingMinutes = minutes % 60;
+
+        let uptimeString = '';
+        if (hours > 0) uptimeString += `${hours}h `;
+        if (minutes > 0) uptimeString += `${remainingMinutes}m `;
+        uptimeString += `${remainingSeconds}s`;
+        
+        stats.uptime = uptimeString.trim();
+        broadcastStats();
+    }, 1000);
 
     // Start WebSocket server
     startWebSocketServer(server);

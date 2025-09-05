@@ -50,9 +50,9 @@ class ZabbixSender {
 
         const requestMessage = `Request JSON: ${json}`;
         console.log(requestMessage);
-        addMessage(requestMessage); // Log to global message system
+        addMessage(requestMessage, 'zabbix-request'); // Log to global message system
         console.log(`Zabbix: Sending ${this.zabbixItemList.length} data items to server`);
-        addMessage(`Zabbix: Sending ${this.zabbixItemList.length} data items to server`); // Log to global message system
+        addMessage(`Zabbix: Sending ${this.zabbixItemList.length} data items to server`, 'zabbix-info'); // Log to global message system
 
         return packetLen;
     }
@@ -88,7 +88,7 @@ class ZabbixSender {
             client.on('end', () => {
                 clearTimeout(timeout);
                 console.log(`Zabbix Result = ${responseData}`);
-                addMessage(`Zabbix Result: ${responseData}`); // Log to global message system
+                addMessage(`Zabbix Result: ${responseData}`, 'zabbix-result'); // Log to global message system
                 resolve(responseData);
             });
 

@@ -94,13 +94,24 @@ Example configuration:
 
 ### Data Ingestion
 
-- `GET /zabbix?data=<JSON>` - Send data to Zabbix (requires authentication)
-- `POST /zabbix` - Send data to Zabbix (requires authentication)
+- `GET /zabbix?server_ip=<IP>&server_port=<PORT>&item_host_name=<HOSTNAME>&<ITEM_KEY_1>=<VALUE_1>&...` - Send data to Zabbix via URL parameters (requires authentication)
+- `POST /zabbix` - Send data to Zabbix via JSON body (requires authentication)
 
-Data format:
+**GET Request Example:**
+```bash
+curl "http://localhost:7000/zabbix?server_ip=192.168.0.163&server_port=10051&item_host_name=test&voltage=54.4&temperature=25.1"
+```
+**Parameters for GET Request:**
+- `server_ip`: IP address of the Zabbix server.
+- `server_port`: Port of the Zabbix server (e.g., 10051).
+- `item_host_name`: Hostname as configured in Zabbix.
+- Any other `KEY=VALUE` pairs will be treated as Zabbix item keys and their respective values. Only numeric values are supported for item values.
+
+**POST Request Data Format:**
 ```json
 {
-  "zabbix_server": "zabbix-server:10051",
+  "zabbix_server_ip": "zabbix-server-ip",
+  "zabbix_server_port": 10051,
   "item_host_name": "host-name",
   "item": [
     {
