@@ -107,7 +107,10 @@ app.get('/zabbix', authMiddleware, async (req, res) => {
     console.log(`\n${message}`);
     addMessage(message, 'timestamp');
 
-    const remoteAddr = req.ip;
+    let remoteAddr = req.ip;
+    if (remoteAddr === '::1') {
+        remoteAddr = '127.0.0.1';
+    }
     if (remoteAddr) {
         console.log(`Received data from HTTP via GET: ${remoteAddr}`);
         addMessage(`Received data from HTTP GET request from: ${remoteAddr}`, 'http-get');
@@ -130,7 +133,8 @@ app.get('/zabbix', authMiddleware, async (req, res) => {
         }
 
         const responseJson = {
-            zabbix_server: `${server_ip}:${server_port}`,
+            zabbix_server_ip: server_ip,
+            zabbix_server_port: parseInt(server_port, 10),
             item_host_name: item_host_name,
             item: items,
         };
@@ -174,7 +178,10 @@ app.post('/zabbix', authMiddleware, async (req, res) => {
     console.log(`\n${message}`);
     addMessage(message, 'timestamp');
 
-    const remoteAddr = req.ip;
+    let remoteAddr = req.ip;
+    if (remoteAddr === '::1') {
+        remoteAddr = '127.0.0.1';
+    }
     if (remoteAddr) {
         console.log(`Received data from HTTP via POST: ${remoteAddr}`);
         addMessage(`Received data from HTTP POST request from: ${remoteAddr}`, 'http-post');
