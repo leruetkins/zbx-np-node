@@ -1,8 +1,9 @@
 const fs = require('fs').promises;
 const path = require('path');
+const { app } = require('electron'); // Import 'app' module
 
-// Note: config.json will be in the root of the parent project, same as the Rust version.
-const configPath = path.join(process.cwd(), '..', 'config.json');
+let _configPath; // Private variable to store config path after initialization
+let _configDirectory; // Private variable to store config directory after initialization
 let config = {};
 
 async function createDefaultConfig() {
@@ -35,10 +36,10 @@ async function createDefaultConfig() {
     };
     
     try {
-        // The config file should be in the zbx-np-node directory
-        const projectRootConfigPath = path.join(process.cwd(), '..', 'config.json');
-        await fs.writeFile(projectRootConfigPath, JSON.stringify(defaultConfig, null, 4));
-        console.log(`Created default config.json in ${projectRootConfigPath}`);
+        // Ensure the directory exists
+        await fs.mkdir(_configDirectory, { recursive: true });
+        await fs.writeFile(_configPath, JSON.stringify(defaultConfig, null, 4));
+        console.log(`Created default config.json in ${_configPath}`);
         return defaultConfig;
     } catch (error) {
         console.error('Failed to create default config:', error);
@@ -47,9 +48,16 @@ async function createDefaultConfig() {
 }
 
 async function loadOrCreateConfig() {
-    const projectRootConfigPath = path.join(process.cwd(), '..', 'config.json');
+    if (process.versions.electron) {
+        await app.whenReady(); // Ensure app is ready before getting path
+        _configDirectory = app.getPath('userData');
+    } else {
+        _configDirectory = process.cwd();
+    }
+    _configPath = path.join(_configDirectory, 'config.json');
+
     try {
-        const configContent = await fs.readFile(projectRootConfigPath, 'utf-8');
+        const configContent = await fs.readFile(_configPath, 'utf-8');
         config = JSON.parse(configContent);
         console.log("Configuration loaded.");
         
@@ -103,9 +111,10 @@ function set(path, value) {
 }
 
 async function saveConfig() {
-    const projectRootConfigPath = path.join(process.cwd(), '..', 'config.json');
     try {
-        await fs.writeFile(projectRootConfigPath, JSON.stringify(config, null, 4));
+        // Ensure the directory exists
+        await fs.mkdir(_configDirectory, { recursive: true });
+        await fs.writeFile(_configPath, JSON.stringify(config, null, 4));
         console.log("Configuration saved successfully.");
     } catch (error) {
         console.error(`Error saving config file ${projectRootConfigPath}:`, error);

@@ -1,6 +1,6 @@
 const config = require('../config');
 const { addMessage, sendWebsocketMessage } = require('../services/websocketServer');
-const { restartMqttService, getMqttStatus, broadcastMqttStatus } = require('../services/mqttClient');
+const { getMqttStatus, broadcastMqttStatus, restartMqttService } = require('../services/mqttClient');
 
 // Stats tracking
 let stats = {

@@ -65,6 +65,14 @@ async function mqttConnect() {
     const host = mqttConfig.url;
     const zabbixTopic = mqttConfig.topic;
 
+    if (!host || (!host.startsWith('mqtt://') && !host.startsWith('mqtts://'))) {
+        const errorMessage = `MQTT Error: Invalid or missing broker URL: '${host}'. Please ensure it starts with mqtt:// or mqtts://`;
+        console.error(errorMessage);
+        addMessage(errorMessage, 'error');
+        broadcastMqttStatus(true, "error", host, zabbixTopic);
+        return; // Prevent further connection attempts
+    }
+
     console.log(`Connecting to MQTT broker: '${host}'`);
     addMessage(`MQTT: Connecting to ${host}`);
 
@@ -232,6 +240,27 @@ async function mqttConnect() {
     });
 }
 
+// Restart MQTT service function
+async function restartMqttService(enabled) {
+    const mqttUrl = config.get('settings.mqtt.url', '');
+    const mqttTopic = config.get('settings.mqtt.topic', '');
+
+    // Stop existing MQTT service if running
+    mqttDisconnect();
+
+    // Wait a moment for the service to shut down
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Start new MQTT service if enabled
+    if (enabled) {
+        broadcastMqttStatus(true, "starting", mqttUrl, mqttTopic);
+        mqttConnect();
+        addMessage("MQTT: Service restarted", 'mqtt-status');
+    } else {
+        addMessage("MQTT: Service disabled", 'mqtt-status');
+    }
+}
+
 function mqttDisconnect() {
     if (mqttClient) {
         mqttShutdownSignal = true;
@@ -256,5 +285,6 @@ module.exports = {
     mqttDisconnect,
     getMqttStatus,
     broadcastMqttStatus,
-    sendCurrentMqttStatusToClient
+    sendCurrentMqttStatusToClient,
+    restartMqttService
 };

@@ -3,7 +3,7 @@ const config = require('./config');
 const path = require('path');
 const { ZabbixSender, decodeUnicodeEscapeSequences } = require('./services/zabbixSender');
 const { startWebSocketServer, addMessage, getMessages, sendWebsocketMessage, clearAllMessages } = require('./services/websocketServer');
-const { mqttConnect, mqttDisconnect, getMqttStatus, broadcastMqttStatus, sendCurrentMqttStatusToClient } = require('./services/mqttClient');
+const { mqttConnect, mqttDisconnect, getMqttStatus, broadcastMqttStatus, sendCurrentMqttStatusToClient, restartMqttService } = require('./services/mqttClient');
 const basicAuth = require('express-basic-auth');
 
 const {
@@ -13,7 +13,7 @@ const {
     getMqttStatusApi,
     getUsers, createUser, deleteUser,
     getTokens, createToken, deleteToken,
-    restartService, getLogs
+    getLogs
 } = require('./api/auth');
 
 const app = express();
@@ -329,7 +329,6 @@ app.post('/api/zabbix/manual', async (req, res) => {
 });
 
 // Management endpoints
-app.post('/api/restart', restartService);
 app.get('/api/logs', getLogs);
 
 app.post('/api/logs/clear', (req, res) => {
@@ -337,26 +336,6 @@ app.post('/api/logs/clear', (req, res) => {
     res.json({ success: true, message: "Logs cleared" });
 });
 
-// Restart MQTT service function
-async function restartMqttService(enabled) {
-    const mqttUrl = config.get('settings.mqtt.url', '');
-    const mqttTopic = config.get('settings.mqtt.topic', '');
-
-    // Stop existing MQTT service if running
-    mqttDisconnect();
-
-    // Wait a moment for the service to shut down
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Start new MQTT service if enabled
-    if (enabled) {
-        broadcastMqttStatus(true, "starting", mqttUrl, mqttTopic);
-        mqttConnect();
-        addMessage("MQTT: Service restarted", 'mqtt-status');
-    } else {
-        addMessage("MQTT: Service disabled", 'mqtt-status');
-    }
-}
 
 // Start the server
 async function startServer() {
