@@ -4,6 +4,8 @@ const path = require('path');
 const { ZabbixSender, decodeUnicodeEscapeSequences } = require('./services/zabbixSender');
 const { startWebSocketServer, addMessage, getMessages, sendWebsocketMessage, clearAllMessages } = require('./services/websocketServer');
 const { mqttConnect, mqttDisconnect, getMqttStatus, broadcastMqttStatus, sendCurrentMqttStatusToClient, restartMqttService } = require('./services/mqttClient');
+const { stats, broadcastStats, setBroadcastFunction } = require('./services/stats');
+const { printTimeDate } = require('./services/utils'); // Import printTimeDate from utils
 const basicAuth = require('express-basic-auth');
 
 const {
@@ -23,19 +25,15 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // Stats tracking
-let stats = {
-    total_requests: 0,
-    successful_requests: 0,
-    failed_requests: 0,
-    mqtt_messages: 0,
-    zabbix_sends: 0,
-    connected_clients: 0,
-    uptime: "0s",
-};
-
-function broadcastStats() {
+// Use the shared stats object instead of defining it here
+function broadcastStatsWrapper() {
     sendWebsocketMessage('stats', stats);
 }
+
+// Set the broadcast function in the shared stats module
+setBroadcastFunction((statsData) => {
+    sendWebsocketMessage('stats', statsData);
+});
 
 // Basic Auth Middleware
 const authMiddleware = basicAuth({
@@ -53,18 +51,6 @@ const authMiddleware = basicAuth({
         return req.auth ? 'Credentials rejected' : 'No credentials provided';
     }
 });
-
-// Utility function to format timestamp
-function printTimeDate() {
-    const now = new Date();
-    const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const year = now.getFullYear();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    return `[${hours}:${minutes}:${seconds} ${day}-${month}-${year}]`;
-}
 
 // Utility function to send data to Zabbix
 async function sendToZabbix(zabbixServerIp, zabbixServerPort, zabbixItemHostName, items) {

@@ -2,6 +2,8 @@ const mqtt = require('mqtt');
 const config = require('../config');
 const { ZabbixSender, decodeUnicodeEscapeSequences } = require('./zabbixSender');
 const { addMessage, sendWebsocketMessage } = require('./websocketServer');
+const { stats, broadcastStats } = require('./stats');
+const { printTimeDate } = require('./utils'); // Import printTimeDate from utils
 
 let mqttClient = null;
 let mqttShutdownSignal = false;
@@ -111,18 +113,18 @@ async function mqttConnect() {
 
     mqttClient.on('connect', () => {
         console.log("MQTT: Connection acknowledged");
-        addMessage("MQTT: Client connected and ready");
+        addMessage("MQTT: Client connected and ready", 'mqtt-connect');
         broadcastMqttStatus(true, "running", host, zabbixTopic);
         reconnectAttempts = 0;
 
         mqttClient.subscribe(zabbixTopic, { qos: 1 }, (err) => {
             if (err) {
                 console.error(`Failed to subscribe to MQTT topic ${zabbixTopic}: ${err}`);
-                addMessage(`MQTT Error: Failed to subscribe - ${err.message}`);
+                addMessage(`MQTT Error: Failed to subscribe - ${err.message}`, 'error');
                 broadcastMqttStatus(true, "error", host, zabbixTopic);
             } else {
                 console.log(`Successfully subscribed to MQTT topic: ${zabbixTopic}`);
-                addMessage(`MQTT: Subscribed to topic ${zabbixTopic}`);
+                addMessage(`MQTT: Subscribed to topic ${zabbixTopic}`, 'mqtt-subscribe');
             }
         });
     });
@@ -133,13 +135,18 @@ async function mqttConnect() {
         if (topic === zabbixTopic) {
             const now = Date.now();
             if (now - zabbixLastMsg > period) {
-                const timestamp = new Date().toISOString();
-                console.log(`\n[${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}]`);
-                addMessage(`[${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}]`);
+                // Update stats for MQTT message received
+                stats.total_requests++; // Increment total requests for MQTT message
+                stats.mqtt_messages++;
+                broadcastStats();
+                
+                const timestampMessage = printTimeDate();
+                console.log(`\n${timestampMessage}`);
+                addMessage(timestampMessage, 'timestamp');
 
                 console.log(`Received MQTT message from topic: ${topic}`);
                 console.log(`Payload: ${message.toString()}`);
-                addMessage(`MQTT: ${message.toString()}`);
+                addMessage(`MQTT: ${message.toString()}`, 'mqtt-message');
 
                 const payload = message.toString();
                 if (payload.trim() === '') {
@@ -159,17 +166,17 @@ async function mqttConnect() {
 
                     if (!zabbixServer) {
                         console.log("Invalid MQTT payload: missing zabbix_server");
-                        addMessage("MQTT Error: Missing zabbix_server field");
+                        addMessage("MQTT Error: Missing zabbix_server field", 'mqtt-error');
                         return;
                     }
                     if (!data.item_host_name) {
                         console.log("Invalid MQTT payload: missing item_host_name");
-                        addMessage("MQTT Error: Missing item_host_name field");
+                        addMessage("MQTT Error: Missing item_host_name field", 'mqtt-error');
                         return;
                     }
                     if (!data.item || data.item.length === 0) {
                         console.log("Invalid MQTT payload: no items specified");
-                        addMessage("MQTT Error: No items in payload");
+                        addMessage("MQTT Error: No items in payload", 'mqtt-error');
                         return;
                     }
 
@@ -183,14 +190,19 @@ async function mqttConnect() {
                         const result = await sendToZabbixFromMqtt(responseJson);
                         const decodedResult = decodeUnicodeEscapeSequences(result);
                         console.log(`Zabbix result: ${decodedResult}`);
-                        addMessage(`Zabbix: ${decodedResult}`);
+                        addMessage(`Zabbix: ${decodedResult}`, 'mqtt-zabbix-result');
+                        // Stats are updated in sendToZabbixFromMqtt function
+                        stats.successful_requests++; // Increment successful requests
+                        broadcastStats();
                     } catch (e) {
                         console.log(`Error sending to Zabbix: ${e.message}`);
-                        addMessage(`Zabbix Error: ${e.message}`);
+                        addMessage(`Zabbix Error: ${e.message}`, 'error');
+                        stats.failed_requests++; // Increment failed requests on Zabbix error
+                        broadcastStats();
                     }
                 } catch (e) {
                     console.log(`Failed to parse MQTT payload as JSON: ${e.message}`);
-                    addMessage(`Parse Error: ${e.message}`);
+                    addMessage(`Parse Error: ${e.message}`, 'mqtt-error');
                 }
                 zabbixLastMsg = now;
             }
@@ -200,7 +212,7 @@ async function mqttConnect() {
     mqttClient.on('error', async (err) => {
         reconnectAttempts++;
         console.error(`MQTT connection error (attempt ${reconnectAttempts}): ${err.message}`);
-        addMessage(`MQTT Error (attempt ${reconnectAttempts}): ${err.message}`);
+        addMessage(`MQTT Error (attempt ${reconnectAttempts}): ${err.message}`, 'mqtt-error');
         
         // Always show disconnected on first error, then reconnecting on subsequent errors
         if (reconnectAttempts === 1) {
@@ -211,7 +223,7 @@ async function mqttConnect() {
         
         if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
             console.error("Max reconnection attempts reached. Stopping MQTT client.");
-            addMessage("MQTT: Max reconnection attempts reached. Client stopped.");
+            addMessage("MQTT: Max reconnection attempts reached. Client stopped.", 'mqtt-error');
             broadcastMqttStatus(true, "error", host, zabbixTopic);
             return;
         }
@@ -236,15 +248,16 @@ async function mqttConnect() {
 
     mqttClient.on('close', () => {
         console.log("MQTT client disconnected");
-        addMessage("MQTT: Disconnected from broker");
+        addMessage("MQTT: Disconnected from broker", 'mqtt-disconnect');
         broadcastMqttStatus(true, "disconnected", host, zabbixTopic);
     });
 
     mqttClient.on('offline', () => {
         console.log("MQTT client went offline");
-        addMessage("MQTT: Client offline");
+        addMessage("MQTT: Client offline", 'mqtt-offline');
         broadcastMqttStatus(true, "offline", host, zabbixTopic);
     });
+
 }
 
 // Restart MQTT service function
@@ -273,12 +286,12 @@ function mqttDisconnect() {
         mqttShutdownSignal = true;
         mqttClient.end(true, () => {
             console.log("MQTT client explicitly disconnected.");
-            addMessage("MQTT: Service stopped by configuration change");
+            addMessage("MQTT: Service stopped by configuration change", 'mqtt-status');
             broadcastMqttStatus(false, "stopped", mqttState.url, mqttState.topic);
         });
     } else {
         console.log("MQTT client not connected or already disconnected.");
-        addMessage("MQTT: Service already stopped or not running.");
+        addMessage("MQTT: Service already stopped or not running.", 'mqtt-status');
         broadcastMqttStatus(false, "stopped", mqttState.url, mqttState.topic);
     }
 }
@@ -317,6 +330,8 @@ async function sendToZabbixFromMqtt(responseJson) {
 
     try {
         const showResult = await zabbixSender.send();
+        stats.zabbix_sends++; // Increment zabbix_sends on successful send
+        // Note: We don't call broadcastStats here because it's called in the message handler
         console.log(`Result = ${showResult}`);
         return showResult;
     } catch (err) {
