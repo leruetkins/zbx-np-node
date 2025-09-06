@@ -150,7 +150,14 @@ async function mqttConnect() {
                 try {
                     const data = JSON.parse(payload);
 
-                    if (!data.zabbix_server) {
+                    // Handle different field names for zabbix_server
+                    let zabbixServer = data.zabbix_server;
+                    if (!zabbixServer && data.zabbix_server_ip) {
+                        const port = data.zabbix_server_port || 10051;
+                        zabbixServer = `${data.zabbix_server_ip}:${port}`;
+                    }
+
+                    if (!zabbixServer) {
                         console.log("Invalid MQTT payload: missing zabbix_server");
                         addMessage("MQTT Error: Missing zabbix_server field");
                         return;
@@ -167,13 +174,13 @@ async function mqttConnect() {
                     }
 
                     const responseJson = {
-                        zabbix_server: data.zabbix_server,
+                        zabbix_server: zabbixServer,
                         item_host_name: data.item_host_name,
                         item: data.item,
                     };
 
                     try {
-                        const result = await sendToZabbix(responseJson);
+                        const result = await sendToZabbixFromMqtt(responseJson);
                         const decodedResult = decodeUnicodeEscapeSequences(result);
                         console.log(`Zabbix result: ${decodedResult}`);
                         addMessage(`Zabbix: ${decodedResult}`);
@@ -278,6 +285,47 @@ function mqttDisconnect() {
 
 function getMqttStatus() {
     return { ...mqttState }; // Return a copy
+}
+
+// Utility function to send data to Zabbix (copied from app.js)
+async function sendToZabbixFromMqtt(responseJson) {
+    // Parse the zabbix_server field which should be in format "ip:port"
+    const serverParts = responseJson.zabbix_server.split(':');
+    if (serverParts.length !== 2) {
+        throw new Error('Invalid zabbix_server format. Expected "ip:port"');
+    }
+    
+    const zabbixServerIp = serverParts[0];
+    const zabbixServerPort = parseInt(serverParts[1], 10);
+    const zabbixItemHostName = responseJson.item_host_name;
+    const items = responseJson.item;
+
+    const zabbixServerAddr = { address: zabbixServerIp, port: zabbixServerPort };
+
+    const zabbixSender = new ZabbixSender(zabbixServerAddr, zabbixItemHostName);
+    for (const item of items) {
+        const itemName = item.key;
+        let itemValue;
+        if (typeof item.value === 'number') {
+            itemValue = item.value.toString();
+        } else {
+            // Handle other types if necessary, or throw an error
+            throw new Error(`Invalid value type for item: ${itemName}`);
+        }
+        zabbixSender.addItem(itemName, itemValue);
+    }
+
+    try {
+        const showResult = await zabbixSender.send();
+        console.log(`Result = ${showResult}`);
+        return showResult;
+    } catch (err) {
+        // Add the error message to the log here to ensure correct order
+        const errorMessage = `Error processing Zabbix request: ${err.message}`;
+        console.error(errorMessage);
+        addMessage(errorMessage, 'error');
+        throw err; // Re-throw the error for the calling function to handle
+    }
 }
 
 module.exports = {
