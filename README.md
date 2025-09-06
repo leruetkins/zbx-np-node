@@ -2,6 +2,10 @@
 
 Node.js implementation of the zbx-np (Zabbix data relay service) originally written in Rust.
 
+<img width="2337" height="1591" alt="изображение" src="https://github.com/user-attachments/assets/a464585f-55c5-4fdc-a342-44f03db0b30e" />
+
+
+
 ## Overview
 
 zbx-np-node is a lightweight Zabbix data relay service that enables any system capable of making HTTP requests or publishing MQTT messages to send monitoring data to a Zabbix server via Zabbix trapper items. This bridges legacy or lightweight IoT devices with Zabbix, which traditionally requires specific agents or protocols.
