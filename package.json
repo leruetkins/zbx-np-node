@@ -8,6 +8,8 @@
     "dev": "nodemon src/app.js",
     "dist": "electron-builder --win portable",
     "dist:zip": "electron-builder --win zip",
+    "dist:linux": "electron-builder --linux AppImage",
+    "dist:linux-dir": "electron-builder --linux dir",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -50,6 +52,18 @@
         }
       ]
     },
+    "linux": {
+    "icon": "icon.png",
+    "target": [
+      {
+        "target": "AppImage",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "category": "Utility"
+  },
     "nsis": {
       "installerIcon": "icon.ico",
       "uninstallerIcon": "icon.ico"
